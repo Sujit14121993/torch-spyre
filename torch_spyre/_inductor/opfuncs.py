@@ -54,6 +54,7 @@ def _initialize_opfunc_mapping():
         "layernormscale",
         "log",
         "mul",
+        "neg",
         "reciprocal",
         "rsqrt",
         "sigmoid",
