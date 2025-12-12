@@ -25,6 +25,7 @@ from utils_inductor import compare, compare_with_cpu
 POINTWISE_UNARY_OPS_DICT = {
     "abs": torch.abs,
     "exp": torch.exp,
+    "neg": torch.neg,
     "reciprocal": torch.reciprocal,
     "relu": torch.relu,
     "tanh": torch.tanh,
