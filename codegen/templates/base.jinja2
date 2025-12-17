@@ -226,7 +226,11 @@
   {% endif %}
   {% endfor %}
   
+  {% if template_data.sendnn_func_name == "Negative" %}
+  auto output_sendnn_tensor = createOutputTensor(gl, {{ output_variable_name }}.storage().data_ptr().get(), 0, {{ sn_idx }});
+  {% else %}
   auto output_sendnn_tensor = createOutputTensor(gl, {{ output_variable_name }}.storage().data_ptr().get(), 0, {{ sn_idx + 1 }});
+  {% endif %}
   output_sendnn_tensor.SetSpyreData((static_cast<SharedOwnerCtx*>({{ output_variable_name }}.storage().data_ptr().get_context()))->owner);
 
   auto copy_status = gl.Compute({output_sendnn_tensor}, input_sendnn_tensor_vector, {{ sn_idx + 1 }});
