@@ -311,6 +311,8 @@ class TestOps(unittest.TestCase, metaclass=ParameterizedTestMeta):
         if op == torch.exp:
             # TODO: eager / sendnn results are radically differ from CPU. deeptools bug?
             compare_with_cpu(op, x)
+        elif op == torch.neg:
+            compare_with_cpu(op, x)
         else:
             compare(op, x)
 
