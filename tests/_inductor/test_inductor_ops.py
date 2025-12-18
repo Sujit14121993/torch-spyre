@@ -155,22 +155,14 @@ class TestOps(unittest.TestCase, metaclass=ParameterizedTestMeta):
                 ]
             ),
         },
-        ("test_reduce_2d", "test_reduce"): {
-            "ops_dict": REDUCTION_OPS_DICT,
-            "param_sets": {
-                "dim_0": (0, cached_randn((67, 256))),
-                # Skip: `cpu()` on sparse tensor doesn't work in eager mode yet
-                # "dim_1": (1, cached_randn((67, 256))),
-            },
-        },
-        ("test_reduce_2d_cpu", "test_reduce_cpu"): {
-            "ops_dict": REDUCTION_OPS_DICT,
-            "param_sets": {
-                "dim_0": (0, cached_randn((67, 256))),
-                # Skip: `cpu()` on sparse tensor doesn't work in eager mode yet
-                # "dim_1": (1, cached_randn((67, 256))),
-            },
-        },
+        # ("test_reduce_2d", "test_reduce"): {
+        #     "ops_dict": REDUCTION_OPS_DICT,
+        #     "param_sets": {
+        #         "dim_0": (0, cached_randn((67, 256))),
+        #         # Skip: `cpu()` on sparse tensor doesn't work in eager mode yet
+        #         # "dim_1": (1, cached_randn((67, 256))),
+        #     },
+        # },
         ("test_max_sub_broadcast_cpu", "test_max_sub_broadcast_cpu"): {
             "param_sets": {
                 "dim_0": (0, cached_randn((128, 256))),
@@ -195,17 +187,64 @@ class TestOps(unittest.TestCase, metaclass=ParameterizedTestMeta):
                 ]
             ),
         },
-        # skipping these - not working yet
-        # ("test_reduce_3d",
-        #  "test_reduce"
-        # ):{
-        #     "ops_dict": REDUCTION_OPS_DICT,
-        #     "param_sets": {
-        #         "dim_0": (0, cached_randn((67, 71, 256))),
-        #         "dim_1": (1, cached_randn((67, 71, 256))),
-        #         "dim_2": (2, cached_randn((67, 71, 256))),
-        #     }
-        # },
+        # Compare with cpu for now to avoid hitting eager mode coverage issue
+        ("test_max_keepdim0", "test_reduce_keepdim0_cpu"): {
+            "ops_dict": {
+                "sum": torch.max,
+            },
+            "param_sets": {
+                "2d_dim_0": (0, cached_randn((67, 256))),
+                # "2d_dim_1": (1, cached_randn((67, 256))), # `cpu()` on sparse tensor doesn't work in eager mode yet
+                # "3d_dim_0": (0, cached_randn((67, 71, 256))), # layout needs repermutation
+                "3d_dim_1": (1, cached_randn((67, 71, 256))),
+                # "3d_dim_2": (2, cached_randn((67, 71, 256))), # sparse tensor output
+            },
+        },
+        ("test_max_keepdim1", "test_reduce_keepdim1_cpu"): {
+            "ops_dict": {
+                "sum": torch.max,
+            },
+            "param_sets": {
+                "2d_dim_0": (0, cached_randn((67, 256))),
+                "2d_dim_1": (1, cached_randn((67, 256))),  # sparse tensor output
+                "3d_dim_0": (0, cached_randn((67, 71, 256))),
+                "3d_dim_1": (1, cached_randn((67, 71, 256))),
+                "3d_dim_2": (2, cached_randn((67, 71, 256))),  # sparse tensor output
+            },
+        },
+        ("test_sum_keepdim0", "test_reduce_keepdim0_cpu"): {
+            "ops_dict": {
+                "sum": torch.sum,
+            },
+            "param_sets": {
+                "2d_dim_0": (0, cached_randn((67, 256))),
+                # "2d_dim_1": (1, cached_randn((67, 256))), # `cpu()` on sparse tensor doesn't work in eager mode yet
+                # "2d_dim_01": ([0, 1], cached_randn((67, 256))), # spyre scalar represented as 1d instead of 0d
+                # "3d_dim_0": (0, cached_randn((67, 71, 256), scale=0.01)), # layout needs repermutation
+                "3d_dim_1": (1, cached_randn((67, 71, 256), scale=0.01)),
+                # "3d_dim_2": (2, cached_randn((67, 71, 256), scale=0.01)), # sparse tensor output
+                "3d_dim_01": ([0, 1], cached_randn((67, 71, 256), scale=0.01)),
+                # "3d_dim_012": ([0, 1, 2], cached_randn((67, 71, 256), scale=0.01)), # spyre scalar represented as 1d instead of 0d
+            },
+        },
+        ("test_sum_keepdim1", "test_reduce_keepdim1_cpu"): {
+            "ops_dict": {
+                "sum": torch.sum,
+            },
+            "param_sets": {
+                "2d_dim_0": (0, cached_randn((67, 256))),
+                "2d_dim_1": (1, cached_randn((67, 256))),  # sparse tensor output
+                "2d_dim_01": ([0, 1], cached_randn((67, 256))),
+                "3d_dim_0": (0, cached_randn((3, 5, 256), scale=0.1)),
+                "3d_dim_1": (1, cached_randn((67, 71, 256), scale=0.1)),
+                "3d_dim_2": (
+                    2,
+                    cached_randn((67, 71, 256), scale=0.1),
+                ),  # sparse tensor output
+                "3d_dim_01": ([0, 1], cached_randn((67, 71, 256), scale=0.1)),
+                "3d_dim_012": ([0, 1, 2], cached_randn((67, 71, 256), scale=0.1)),
+            },
+        },
         ("test_transpose_2d_cpu", "test_transpose_2d_cpu"): {
             "param_sets": make_param_dict(
                 [
@@ -297,6 +336,47 @@ class TestOps(unittest.TestCase, metaclass=ParameterizedTestMeta):
                 ),
             },
         },
+        (
+            "test_activation_cls",
+            "test_activation_cls",
+        ): {
+            "ops_dict": {
+                "gelu": torch.nn.GELU,
+            },
+            "param_sets": {
+                "fp16": (
+                    cached_randn((128, 128), dtype=torch.float16),
+                    {
+                        "approximate": "tanh",
+                    },
+                    0.01,
+                ),
+            },
+        },
+        (
+            "test_activation_fn",
+            "test_activation_fn",
+        ): {
+            "ops_dict": {
+                "silu": torch.nn.functional.silu,
+            },
+            "param_sets": {
+                "fp16": (
+                    cached_randn((128, 128), dtype=torch.float16),
+                    0.01,
+                ),
+            },
+        },
+        (
+            "test_clone",
+            "test_clone",
+        ): {
+            "param_sets": {
+                "1d": (cached_randn((128,), dtype=torch.float16),),
+                "2d": (cached_randn((256, 128), dtype=torch.float16),),
+                "3d": (cached_randn((8, 16, 256), dtype=torch.float16),),
+            },
+        },
     }
 
     def __init__(self, *args, **kwargs):
@@ -338,18 +418,24 @@ class TestOps(unittest.TestCase, metaclass=ParameterizedTestMeta):
     def test_add_broadcast_cpu(self, x, y):
         compare_with_cpu(lambda x, y: torch.add(x[None, :], y), x, y)
 
-    @unittest.skip("eager mode crashes")
-    def test_reduce(self, op, dim: int, x):
-        if op == torch.max:
-            compare(lambda x: op(x, dim=dim)[0], x)
-        else:
-            compare(lambda x: op(x, dim=dim), x)
+    # @unittest.skip("eager mode crashes")
+    # def test_reduce(self, op, dim: int, x):
+    #     if op == torch.max:
+    #         compare(lambda x: op(x, dim=dim)[0], x)
+    #     else:
+    #         compare(lambda x: op(x, dim=dim), x)
 
-    def test_reduce_cpu(self, op, dim: int, x):
+    def test_reduce_keepdim0_cpu(self, op, dim: int, x):
         if op == torch.max:
-            compare_with_cpu(lambda x: op(x, dim=dim)[0], x)
+            compare_with_cpu(lambda x: op(x, dim=dim, keepdim=False)[0], x)
         else:
-            compare_with_cpu(lambda x: op(x, dim=dim), x)
+            compare_with_cpu(lambda x: op(x, dim=dim, keepdim=False), x)
+
+    def test_reduce_keepdim1_cpu(self, op, dim: int, x):
+        if op == torch.max:
+            compare_with_cpu(lambda x: op(x, dim=dim, keepdim=True)[0], x)
+        else:
+            compare_with_cpu(lambda x: op(x, dim=dim, keepdim=True), x)
 
     def test_max_sub_broadcast_cpu(self, dim: int, x):
         def fn(x):
@@ -373,6 +459,15 @@ class TestOps(unittest.TestCase, metaclass=ParameterizedTestMeta):
 
     def test_range_op(self, op, input, min, max, err):
         compare_with_cpu(lambda x: op(x, min, max), input, atol=err, rtol=err)
+
+    def test_activation_cls(self, op, input, kwargs, err):
+        compare_with_cpu(lambda x: op(**kwargs)(x), input, atol=err, rtol=err)
+
+    def test_activation_fn(self, op, input, err):
+        compare_with_cpu(lambda x: op(x), input, atol=err, rtol=err)
+
+    def test_clone(self, x):
+        compare_with_cpu(lambda a: torch.clone(a).contiguous(), x)
 
 
 if __name__ == "__main__":
